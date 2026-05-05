@@ -35,7 +35,7 @@ func registerProvisioningClusterHandler(router Router, authorizer *authz.Authori
 	router.HandleFunc("DELETE /{name}", response.With(handler.clusterDelete, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanDelete)))
 	router.HandleFunc("POST /{name}", response.With(handler.clusterPost, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanEdit)))
 	router.HandleFunc("POST /{name}/:add-servers", response.With(handler.clusterAddServersPost, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanEdit)))
-	router.HandleFunc("POST /{name}/:remove-server", response.With(handler.clusterRemoveServerPost, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanEdit)))
+	router.HandleFunc("POST /{name}/:remove-servers", response.With(handler.clusterRemoveServerPost, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanEdit)))
 	router.HandleFunc("POST /{name}/:bulk-update", response.With(handler.clusterBulkUpdatePost, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanEdit)))
 	router.HandleFunc("POST /{name}/:resync-inventory", response.With(handler.clusterResyncInventoryPost, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanEdit)))
 	router.HandleFunc("POST /{name}/:update", response.With(handler.clusterUpdatePost, assertPermission(authorizer, authz.ObjectTypeServer, authz.EntitlementCanEdit)))
@@ -618,9 +618,9 @@ func (c *clusterHandler) clusterRemoveServerPost(r *http.Request) response.Respo
 		return response.BadRequest(err)
 	}
 
-	err = c.service.RemoveServer(r.Context(), name, removeServerRequest.ServerName)
+	err = c.service.RemoveServer(r.Context(), name, removeServerRequest.ServerNames)
 	if err != nil {
-		return response.SmartError(fmt.Errorf("Failed to remove server %q from cluster %q: %w", removeServerRequest.ServerName, name, err))
+		return response.SmartError(fmt.Errorf("Failed to remove servers %v from cluster %q: %w", removeServerRequest.ServerNames, name, err))
 	}
 
 	return response.SyncResponseLocation(true, nil, "/"+api.APIVersion+"/provisioning/clusters/"+name)
