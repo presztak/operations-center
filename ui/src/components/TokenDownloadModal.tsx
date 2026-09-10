@@ -8,7 +8,7 @@ import { useNotification } from "context/notificationContext";
 import { Token } from "types/token";
 import { TokenImageFormValues } from "types/token";
 import { IncusServerTypeString } from "util/server";
-import { BootSecurity } from "util/token";
+import { BootSecurity, DriveSortOrder } from "util/token";
 import { downloadFile } from "util/util";
 import YAML from "yaml";
 
@@ -40,6 +40,10 @@ const TokenDownloadModal: FC<Props> = ({
         boot_security: BootSecurity.OPTIMAL,
         target: {
           id: "",
+          bus: "",
+          min_size: "",
+          max_size: "",
+          sort_order: DriveSortOrder.SINGLE,
         },
       },
       network: "",

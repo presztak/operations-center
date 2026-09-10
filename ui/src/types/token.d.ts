@@ -1,10 +1,13 @@
-import { BootSecurity } from "util/token";
+import { BootSecurity, DriveSortOrder } from "util/token";
 
 type ImageType = "iso" | "raw";
 
 type Architecture = "" | "x86_64" | "aarch64";
 
 export type BootSecurityType = (typeof BootSecurity)[keyof typeof BootSecurity];
+
+export type DriveSortOrderType =
+  (typeof DriveSortOrder)[keyof typeof DriveSortOrder];
 
 type YamlValue =
   | string
@@ -31,6 +34,10 @@ export interface TokenFormValues {
 
 export interface InstallTargetFormValues {
   id: string;
+  bus: string;
+  min_size: string;
+  max_size: string;
+  sort_order: DriveSortOrderType;
 }
 
 export interface InstallFormValues {

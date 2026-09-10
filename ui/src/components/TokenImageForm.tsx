@@ -7,6 +7,7 @@ import ImageTypeSelect from "components/ImageTypeSelect";
 import SecondaryIncusSelect from "components/SecondaryIncusSelect";
 import { TokenImageFormValues } from "types/token";
 import { IncusServerTypeString, ServerTypeString } from "util/server";
+import { DriveSortOrder } from "util/token";
 
 interface Props {
   formik: FormikProps<TokenImageFormValues>;
@@ -43,10 +44,12 @@ const TokenImageForm: FC<Props> = ({ formik }) => {
             onBlur={formik.handleBlur}
             className="mb-3"
           />
+          <h6 className="mt-4">Specific drive selection</h6>
           <Form.Label>
             Drive identifier (as seen in /dev/disk/by-id), can be a partial
-            string but must match exactly one drive. If empty, IncusOS will
-            auto-install so long as only one drive is present.
+            string but must match exactly one drive. If empty and no other
+            selection criteria are set below, IncusOS will auto-install so long
+            as only one drive is present.
           </Form.Label>
           <Form.Control
             type="text"
@@ -55,6 +58,85 @@ const TokenImageForm: FC<Props> = ({ formik }) => {
             value={formik.values.seeds.install.target.id}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
+          />
+          <h6 className="mt-4">Flexible drive selection</h6>
+          <Form.Label>
+            The bus on which to look for a suitable boot drive.
+          </Form.Label>
+          <Form.Control
+            type="text"
+            name="seeds.install.target.bus"
+            placeholder="nvme"
+            value={formik.values.seeds.install.target.bus}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            className="mb-3"
+          />
+          <Form.Label>The minimum size for a suitable boot drive.</Form.Label>
+          <Form.Control
+            type="text"
+            name="seeds.install.target.min_size"
+            placeholder="50GiB"
+            value={formik.values.seeds.install.target.min_size}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            className="mb-3"
+          />
+          <Form.Label>The maximum size for a suitable boot drive.</Form.Label>
+          <Form.Control
+            type="text"
+            name="seeds.install.target.max_size"
+            placeholder="200GiB"
+            value={formik.values.seeds.install.target.max_size}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            className="mb-3"
+          />
+          <Form.Label>Drive selection criteria</Form.Label>
+          <Form.Check
+            type="radio"
+            label="Expect a single drive to match (fail if more than one matches)"
+            name="seeds.install.target.sort_order"
+            checked={
+              formik.values.seeds.install.target.sort_order ==
+              DriveSortOrder.SINGLE
+            }
+            onChange={() =>
+              formik.setFieldValue(
+                "seeds.install.target.sort_order",
+                DriveSortOrder.SINGLE,
+              )
+            }
+          />
+          <Form.Check
+            type="radio"
+            label="Use the smallest matching drive as boot drive"
+            name="seeds.install.target.sort_order"
+            checked={
+              formik.values.seeds.install.target.sort_order ==
+              DriveSortOrder.SMALLEST
+            }
+            onChange={() =>
+              formik.setFieldValue(
+                "seeds.install.target.sort_order",
+                DriveSortOrder.SMALLEST,
+              )
+            }
+          />
+          <Form.Check
+            type="radio"
+            label="Use the largest matching drive as boot drive"
+            name="seeds.install.target.sort_order"
+            checked={
+              formik.values.seeds.install.target.sort_order ==
+              DriveSortOrder.LARGEST
+            }
+            onChange={() =>
+              formik.setFieldValue(
+                "seeds.install.target.sort_order",
+                DriveSortOrder.LARGEST,
+              )
+            }
           />
         </Form.Group>
         <Form.Group className="mb-4" controlId="application">
