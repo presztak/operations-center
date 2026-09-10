@@ -1,0 +1,55 @@
+package incus
+
+import (
+	"context"
+	"net/http"
+
+	incusapi "github.com/lxc/incus/v7/shared/api"
+
+	"github.com/FuturFusion/operations-center/internal/domain"
+	"github.com/FuturFusion/operations-center/internal/provisioning"
+)
+
+func (c Client) Get{{ .PluralName | pascalcase }}(ctx context.Context, endpoint provisioning.Endpoint {{- if .HasProjectFromParent }}, projectName string {{- end }}{{- if .HasParent }}, {{ .ParentName | camelcase }}Name string {{- end -}} ) ([]incusapi.{{ .ObjectType | pascalcase }}, error) {
+	client, err := c.getClient(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+{{- if .HasProjectFromParent }}
+
+	client = client.UseProject(projectName)
+{{- end }}
+
+	server{{ .PluralName | pascalcase }}, err := client.{{ .IncusGetAllMethod }}({{ if eq .IncusGetAllMethod "GetInstancesFullAllProjects" }}incusapi.{{ .Name | pascalcase }}TypeAny{{ end }}{{ if .HasParent }}{{ .ParentName | camelcase }}Name{{ end }})
+	if incusapi.StatusErrorCheck(err, http.StatusNotFound) {
+		return nil, domain.ErrNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return server{{ .PluralName | pascalcase }}, nil
+}
+
+func (c Client) Get{{ .Name | pascalcase }}ByName(ctx context.Context, endpoint provisioning.Endpoint, {{- if .HasProject }}projectName string, {{ end -}}{{- if .HasParent }}{{ .ParentName | camelcase }}Name string, {{ end -}} {{ .Name | camelcase }}Name string {{- range .ExtraAttributes }}, {{ $.Name | camelcase }}{{ .Name | pascalcase }} {{ .Type }}{{- end}}) (incusapi.{{ .ObjectType | pascalcase }}, error) {
+	client, err := c.getClient(ctx, endpoint)
+	if err != nil {
+		return incusapi.{{ .ObjectType | pascalcase }}{}, err
+	}
+{{- if .HasProject }}
+
+	client = client.UseProject(projectName)
+{{- end }}
+
+	server{{ .Name | pascalcase }}, _, err := client.{{ .IncusGetMethod }}({{ if .HasParent }}{{ .ParentName | camelcase }}Name, {{- end -}} {{- range .ExtraAttributes }} {{ $.Name | camelcase }}{{ .Name | pascalcase }}, {{- end}} {{ .Name | camelcase }}Name)
+	if incusapi.StatusErrorCheck(err, http.StatusNotFound) {
+		return incusapi.{{ .ObjectType | pascalcase }}{}, domain.ErrNotFound
+	}
+
+	if err != nil {
+		return incusapi.{{ .ObjectType | pascalcase }}{}, err
+	}
+
+	return *server{{ .Name | pascalcase }}, nil
+}
