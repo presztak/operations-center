@@ -355,4 +355,45 @@ type BMCTaskMonitor struct {
 type ServerStatusInternal struct {
 	// Deployment holds the state of the automated deployment of the server.
 	Deployment *ServerDeployment `json:"deployment,omitempty"`
+
+	// TriggeredUpdate holds the components of the update in flight.
+	TriggeredUpdate *ServerTriggeredUpdate `json:"triggered_update,omitempty"`
+}
+
+// ServerTriggeredUpdate records the components an update has been triggered for
+// together with the version each of them is expected to reach.
+type ServerTriggeredUpdate struct {
+	// OS is the version the OS is expected to reach.
+	OS string `json:"os,omitempty"`
+
+	// Applications maps the name of every application an update has been triggered for.
+	Applications map[string]string `json:"applications,omitempty"`
+
+	// TriggeredAt is the point in time the update has been triggered.
+	TriggeredAt time.Time `json:"triggered_at"`
+}
+
+// IsPending reports whether any of the triggered components still has work ahead of it.
+func (t *ServerTriggeredUpdate) IsPending(versionData api.ServerVersionData) bool {
+	if t == nil {
+		return false
+	}
+
+	if t.OS != "" && ptr.From(versionData.OS.NeedsUpdate) &&
+		versionData.OS.Version != t.OS && versionData.OS.VersionNext != t.OS {
+		return true
+	}
+
+	for _, application := range versionData.Applications {
+		expectedVersion, ok := t.Applications[application.Name]
+		if !ok {
+			continue
+		}
+
+		if ptr.From(application.NeedsUpdate) && application.Version != expectedVersion {
+			return true
+		}
+	}
+
+	return false
 }
