@@ -70,7 +70,9 @@ const TokenForm: FC<Props> = ({ token, onSubmit }) => {
                 className="form-control"
                 placeholderText="Expiry"
                 selected={new Date(formik.values.expire_at)}
-                onChange={(date) => formik.setFieldValue("expire_at", date)}
+                onChange={(date: Date | null) =>
+                  formik.setFieldValue("expire_at", date)
+                }
                 showTimeSelect
                 timeFormat="HH:mm"
                 timeIntervals={60}
