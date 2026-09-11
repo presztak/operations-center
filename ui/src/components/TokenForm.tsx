@@ -1,4 +1,4 @@
-import { FC, useRef } from "react";
+import { FC, useState } from "react";
 import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
 import { useFormik } from "formik";
@@ -10,17 +10,14 @@ interface Props {
 }
 
 const TokenForm: FC<Props> = ({ token, onSubmit }) => {
-  const in30Days = useRef<Date | null>(null);
-
-  if (in30Days.current === null) {
-    const now = new Date();
-    in30Days.current = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  }
+  const [in30Days] = useState(
+    () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  );
 
   let formikInitialValues: TokenFormValues = {
     description: "",
     channel: "",
-    expire_at: in30Days.current?.toISOString(),
+    expire_at: in30Days.toISOString(),
     uses_remaining: 1,
   };
 
