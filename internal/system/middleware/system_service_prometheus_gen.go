@@ -5,6 +5,7 @@ package middleware
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,6 +38,20 @@ func NewSystemServiceWithPrometheus(base system0.SystemService, instanceName str
 		base:         base,
 		instanceName: instanceName,
 	}
+}
+
+// Backup implements system0.SystemService.
+func (_d SystemServiceWithPrometheus) Backup(ctx context.Context, complete bool) (readCloser io.ReadCloser, err error) {
+	_since := time.Now()
+	defer func() {
+		result := "ok"
+		if err != nil {
+			result = "error"
+		}
+
+		systemServiceDurationSummaryVec.WithLabelValues(_d.instanceName, "Backup", result).Observe(time.Since(_since).Seconds())
+	}()
+	return _d.base.Backup(ctx, complete)
 }
 
 // CleanCache implements system0.SystemService.
@@ -105,6 +120,20 @@ func (_d SystemServiceWithPrometheus) GetUpdatesConfig(ctx context.Context) (upd
 		systemServiceDurationSummaryVec.WithLabelValues(_d.instanceName, "GetUpdatesConfig", result).Observe(time.Since(_since).Seconds())
 	}()
 	return _d.base.GetUpdatesConfig(ctx)
+}
+
+// Restore implements system0.SystemService.
+func (_d SystemServiceWithPrometheus) Restore(ctx context.Context, archive io.Reader) (err error) {
+	_since := time.Now()
+	defer func() {
+		result := "ok"
+		if err != nil {
+			result = "error"
+		}
+
+		systemServiceDurationSummaryVec.WithLabelValues(_d.instanceName, "Restore", result).Observe(time.Since(_since).Seconds())
+	}()
+	return _d.base.Restore(ctx, archive)
 }
 
 // TriggerCertificateRenew implements system0.SystemService.

@@ -5,6 +5,7 @@ package middleware
 
 import (
 	"context"
+	"io"
 	"log/slog"
 
 	system0 "github.com/FuturFusion/operations-center/internal/system"
@@ -45,6 +46,38 @@ func NewSystemServiceWithSlog(base system0.SystemService, opts ...SystemServiceW
 	}
 
 	return this
+}
+
+// Backup implements system0.SystemService.
+func (_d SystemServiceWithSlog) Backup(ctx context.Context, complete bool) (readCloser io.ReadCloser, err error) {
+	ctx = logger.ContextWithComponent(ctx, _d._component)
+	log := slog.With()
+	if slog.Default().Enabled(ctx, logger.LevelTrace) {
+		log = log.With(
+			slog.Any("ctx", ctx),
+			slog.Bool("complete", complete),
+		)
+	}
+	log.DebugContext(ctx, "=> calling Backup")
+	defer func() {
+		log := slog.With()
+		if slog.Default().Enabled(ctx, logger.LevelTrace) {
+			log = slog.With(
+				slog.Any("readCloser", readCloser),
+				slog.Any("err", err),
+			)
+		} else {
+			if err != nil {
+				log = slog.With("err", err)
+			}
+		}
+		if err != nil {
+			log.DebugContext(ctx, "<= method Backup returned an error")
+		} else {
+			log.DebugContext(ctx, "<= method Backup finished")
+		}
+	}()
+	return _d._base.Backup(ctx, complete)
 }
 
 // CleanCache implements system0.SystemService.
@@ -198,6 +231,37 @@ func (_d SystemServiceWithSlog) GetUpdatesConfig(ctx context.Context) (updates s
 		log.DebugContext(ctx, "<= method GetUpdatesConfig finished")
 	}()
 	return _d._base.GetUpdatesConfig(ctx)
+}
+
+// Restore implements system0.SystemService.
+func (_d SystemServiceWithSlog) Restore(ctx context.Context, archive io.Reader) (err error) {
+	ctx = logger.ContextWithComponent(ctx, _d._component)
+	log := slog.With()
+	if slog.Default().Enabled(ctx, logger.LevelTrace) {
+		log = log.With(
+			slog.Any("ctx", ctx),
+			slog.Any("archive", archive),
+		)
+	}
+	log.DebugContext(ctx, "=> calling Restore")
+	defer func() {
+		log := slog.With()
+		if slog.Default().Enabled(ctx, logger.LevelTrace) {
+			log = slog.With(
+				slog.Any("err", err),
+			)
+		} else {
+			if err != nil {
+				log = slog.With("err", err)
+			}
+		}
+		if err != nil {
+			log.DebugContext(ctx, "<= method Restore returned an error")
+		} else {
+			log.DebugContext(ctx, "<= method Restore finished")
+		}
+	}()
+	return _d._base.Restore(ctx, archive)
 }
 
 // TriggerCertificateRenew implements system0.SystemService.

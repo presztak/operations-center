@@ -2,6 +2,7 @@ package system
 
 import (
 	"context"
+	"io"
 
 	"github.com/FuturFusion/operations-center/internal/provisioning"
 	"github.com/FuturFusion/operations-center/shared/api/system"
@@ -25,10 +26,25 @@ type SystemService interface {
 	UpdateUpdatesConfig(ctx context.Context, cfg system.UpdatesPut) error
 
 	CleanCache(ctx context.Context) error
+
+	Backup(ctx context.Context, complete bool) (io.ReadCloser, error)
+	Restore(ctx context.Context, archive io.Reader) error
 }
 
 type CacheRepo interface {
 	CleanupAll(ctx context.Context) error
+}
+
+type DatabaseRepo interface {
+	// Snapshot writes a copy of the database without the inventory to dir.
+	Snapshot(ctx context.Context, dir string) error
+
+	// SchemaVersion returns the current and the latest schema version of the database in dir.
+	SchemaVersion(ctx context.Context, dir string) (current int, latest int, _ error)
+}
+
+type ProvisioningClusterService interface {
+	GetAll(ctx context.Context) (provisioning.Clusters, error)
 }
 
 type ProvisioningServerService interface {
