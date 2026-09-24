@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -17,6 +18,7 @@ import (
 
 	restapi "github.com/FuturFusion/operations-center/internal/api"
 	config "github.com/FuturFusion/operations-center/internal/config/daemon"
+	"github.com/FuturFusion/operations-center/internal/system"
 	"github.com/FuturFusion/operations-center/internal/util/logger"
 )
 
@@ -64,6 +66,17 @@ func (c *cmdDaemon) Run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Create data directory %q: %v", c.env.VarDir(), err)
 	}
 
+	logCtx := logger.ContextWithComponent(cmd.Context(), componentDaemon)
+
+	err = system.PrepareVarDir(c.env.VarDir())
+	if err != nil {
+		if !errors.Is(err, system.ErrRestoreRolledBack) {
+			return fmt.Errorf("Failed to prepare data directory %q: %w", c.env.VarDir(), err)
+		}
+
+		slog.ErrorContext(logCtx, "Failed to restore from backup", logger.Err(err))
+	}
+
 	// Ensure we have the run directory.
 	err = os.MkdirAll(c.env.RunDir(), 0o750)
 	if err != nil {
@@ -96,8 +109,6 @@ func (c *cmdDaemon) Run(cmd *cobra.Command, args []string) error {
 	)
 	defer stop()
 
-	logCtx := logger.ContextWithComponent(cmd.Context(), componentDaemon)
-
 	// Generate client certificate if none are found.
 	clientCertFilename := filepath.Join(c.env.VarDir(), config.ClientCertificateFilename)
 	clientKeyFilename := filepath.Join(c.env.VarDir(), config.ClientKeyFilename)
@@ -119,7 +130,13 @@ func (c *cmdDaemon) Run(cmd *cobra.Command, args []string) error {
 
 	slog.InfoContext(logCtx, "Daemon started")
 
-	<-rootCtx.Done()
+	restart := false
+	select {
+	case <-rootCtx.Done():
+	case <-d.RestartRequested():
+		restart = true
+	}
+
 	slog.InfoContext(logCtx, "Shutting down")
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -132,6 +149,27 @@ func (c *cmdDaemon) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	slog.InfoContext(logCtx, "Daemon shutdown completed successfully")
+
+	if restart {
+		return restartDaemon(logCtx)
+	}
+
+	return nil
+}
+
+// restartDaemon replaces the running process with a new instance of the daemon.
+func restartDaemon(ctx context.Context) error {
+	executable, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("Failed to restart daemon: %w", err)
+	}
+
+	slog.InfoContext(ctx, "Restarting daemon")
+
+	err = unix.Exec(executable, os.Args, os.Environ())
+	if err != nil {
+		return fmt.Errorf("Failed to restart daemon: %w", err)
+	}
 
 	return nil
 }

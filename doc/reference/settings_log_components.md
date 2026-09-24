@@ -148,6 +148,8 @@ security:
 system:
 
 - `system.cache_repo`
+- `system.database_repo`
+- `system.provisioning_cluster_service`
 - `system.provisioning_server_service`
 - `system.system_service`
 
