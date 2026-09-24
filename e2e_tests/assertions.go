@@ -326,6 +326,29 @@ func assertOperationsCenterCliUpdateCleanupAndRefresh(ctx context.Context, t *te
 	mustWaitUpdatesReady(ctx, t)
 }
 
+func assertOperationsCenterCliSystemBackupRestore(ctx context.Context, t *testing.T, tmpDir string) {
+	t.Helper()
+
+	t.Log("Assert operations-center cli system backup and restore")
+
+	backupFile := filepath.Join(tmpDir, "operations-center-backup.tar.gz")
+
+	mustRun(t, `../bin/operations-center.linux.%s system backup %s`, cpuArch, backupFile)
+
+	// Change the state after the backup.
+	mustRun(t, `EDITOR='sed -i "s|^log_level: .*|log_level: ERROR|"' script -q -c '../bin/operations-center.linux.%s system settings edit' /dev/null`, cpuArch)
+
+	resp := mustRun(t, `../bin/operations-center.linux.%s system settings show`, cpuArch)
+	require.Contains(t, resp.Output(), "log_level: ERROR")
+
+	mustRun(t, `../bin/operations-center.linux.%s system restore %s`, cpuArch, backupFile)
+
+	// Operations Center restarts with the restored state.
+	ok, err := waitForSuccessWithTimeout(ctx, t, "restored settings", `../bin/operations-center.linux.%s system settings show | grep -q "^log_level: INFO$"`, 2*time.Minute, cpuArch)
+	require.NoError(t, err)
+	require.True(t, ok, "expect settings to be restored from backup")
+}
+
 func assertOperationsCenterCliProvisioningTokenSeed(t *testing.T, tmpDir string) {
 	t.Helper()
 
