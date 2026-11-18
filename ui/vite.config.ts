@@ -16,5 +16,9 @@ export default defineConfig({
     // Reuses the jsdom environment across test files, which is created once per worker instead of per file.
     pool: 'vmThreads',
     setupFiles: './src/test/setup.ts',
+    coverage: {
+      include: ['src/**'],
+      exclude: ['src/test/**', 'src/**/*.test.*', 'src/main.tsx'],
+    },
   },
 })
