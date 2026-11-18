@@ -15,8 +15,8 @@ import { Settings } from "types/server";
 interface Options {
   // Initial URL of the router.
   route?: string;
-  // Merged into the default settings, which describe an OIDC login.
-  settings?: Partial<Settings>;
+  // Merged into the default settings, which describe an OIDC login. With null, they are fetched.
+  settings?: Partial<Settings> | null;
   // Data preloaded into the query cache.
   queryData?: [QueryKey, unknown][];
 }
@@ -41,10 +41,12 @@ export const renderWithProviders = (
     },
   });
 
-  queryClient.setQueryData(["settings"], {
-    ...defaultSettings,
-    ...options.settings,
-  });
+  if (options.settings !== null) {
+    queryClient.setQueryData(["settings"], {
+      ...defaultSettings,
+      ...options.settings,
+    });
+  }
 
   for (const [key, data] of options.queryData ?? []) {
     queryClient.setQueryData(key, data);
